@@ -21,6 +21,7 @@ export default function Shell({
         searchValue={searchValue}
         onSearchChange={onSearchChange}
         sparksBalance={sparksBalance}
+        onSelectView={onSelectView}
       />
 
       <div className="flex min-h-0 flex-1">

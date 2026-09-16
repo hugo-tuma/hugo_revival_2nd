@@ -114,6 +114,25 @@ export function useTopLikedTracks(limit = 8) {
 }
 
 /* ------------------------------------------------------------------ */
+/* Shop                                                                 */
+/* ------------------------------------------------------------------ */
+
+export function useMerchItems() {
+  return useQuery({
+    queryKey: ['merchItems'],
+    queryFn: async () => {
+      assertSupabase();
+      const { data, error } = await supabase
+        .from('merch_items')
+        .select('*, artist:profiles!merch_items_artist_id_fkey(handle, display_name, color)')
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+  });
+}
+
+/* ------------------------------------------------------------------ */
 /* Sparks / Payouts — public, privacy-preserving aggregates             */
 /* (see supabase/migrations/0006_public_showcase_views.sql)             */
 /* ------------------------------------------------------------------ */

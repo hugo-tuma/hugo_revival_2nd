@@ -10,6 +10,7 @@ import GigsView from './views/GigsView';
 import SparksView from './views/SparksView';
 import MusicPlayerView from './views/MusicPlayerView';
 import GroupsView from './views/GroupsView';
+import ShopView from './views/ShopView';
 
 const VIEWS = {
   library: LibraryView,
@@ -19,6 +20,7 @@ const VIEWS = {
   player: MusicPlayerView,
   groups: GroupsView,
   payouts: PayoutsView,
+  shop: ShopView,
 };
 
 function AppShell() {
