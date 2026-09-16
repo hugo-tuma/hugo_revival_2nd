@@ -714,6 +714,11 @@ select
   sl.created_at
 from public.sparks_ledger sl
 where sl.category = 'merch'
+  -- Guards against any pre-existing 'merch' ledger rows from an older/
+  -- incompatible seed run whose metadata predates the merch_id key —
+  -- without this, a stale row with no merch_id crashes the NOT NULL
+  -- constraint below instead of just being skipped.
+  and sl.metadata ? 'merch_id'
 on conflict (id) do nothing;
 
 -- =============================================================================
