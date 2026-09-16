@@ -7,7 +7,7 @@
 #   supabase link --project-ref <your-project-ref>
 #   supabase db push
 
-project_id = "spaces"
+project_id = "rspace"
 
 [db]
 port = 54322

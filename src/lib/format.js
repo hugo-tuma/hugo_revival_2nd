@@ -25,13 +25,3 @@ export function formatGigDate(dateStr) {
     .toLocaleDateString(undefined, { month: 'short', day: '2-digit' })
     .toUpperCase();
 }
-
-export function initialsOf(name) {
-  return (name || '')
-    .split(' ')
-    .filter(Boolean)
-    .map((w) => w[0])
-    .join('')
-    .slice(0, 2)
-    .toUpperCase();
-}
