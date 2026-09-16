@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { GitFork, Music2, Radio, Sparkles } from 'lucide-react';
+import { Music2, Radio, Sparkles } from 'lucide-react';
 import { useFeed, usePostFeedEvent, useTopFriends } from '../../hooks/useSpacesQueries';
 import { timeAgo, initialsOf } from '../../utils/format';
 import SectionHeading from '../ui/SectionHeading';
@@ -21,12 +21,6 @@ function EventBody({ event }) {
             <Music2 size={11} className="text-spark" /> {event.metadata?.title}
           </div>
         </>
-      );
-    case 'fork':
-      return (
-        <p className="mt-0.5 flex items-center gap-1 text-xs">
-          <GitFork size={11} /> forked a Space
-        </p>
       );
     case 'badge_mint':
       return (

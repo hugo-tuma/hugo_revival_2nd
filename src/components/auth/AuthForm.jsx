@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { Loader2, Radio } from 'lucide-react';
+import { Loader2, Mic2, Radio, User } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 
 export default function AuthForm() {
   const [mode, setMode] = useState('sign_in');
+  const [role, setRole] = useState('listener');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
@@ -24,7 +25,7 @@ export default function AuthForm() {
         const { data, error: signUpError } = await supabase.auth.signUp({
           email,
           password,
-          options: { data: { display_name: displayName || 'New Space' } },
+          options: { data: { display_name: displayName || 'New Space', role } },
         });
         if (signUpError) throw signUpError;
         if (!data.session) {
@@ -43,7 +44,7 @@ export default function AuthForm() {
     <div className="flex min-h-screen items-center justify-center bg-cream p-6 font-mono">
       <div className="w-full max-w-sm border-2 border-black bg-white p-6">
         <div className="mb-5 flex items-center gap-1.5 text-xl font-black tracking-tight">
-          SPACES
+          R'SPACE
           <span className="inline-block h-2 w-2 bg-spark" />
         </div>
 
@@ -68,13 +69,36 @@ export default function AuthForm() {
 
         <form onSubmit={submit} className="flex flex-col gap-2">
           {mode === 'sign_up' && (
-            <input
-              value={displayName}
-              onChange={(e) => setDisplayName(e.target.value)}
-              placeholder="Display name"
-              className="border-2 border-black px-2 py-1.5 text-sm"
-              required
-            />
+            <>
+              <input
+                value={displayName}
+                onChange={(e) => setDisplayName(e.target.value)}
+                placeholder="Display name"
+                className="border-2 border-black px-2 py-1.5 text-sm"
+                required
+              />
+
+              <div className="flex border-2 border-black">
+                <button
+                  type="button"
+                  onClick={() => setRole('listener')}
+                  className={`flex flex-1 items-center justify-center gap-1.5 py-1.5 text-xs font-bold uppercase ${
+                    role === 'listener' ? 'bg-black text-cream' : 'hover:bg-black/5'
+                  }`}
+                >
+                  <User size={12} /> Listener
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setRole('artist')}
+                  className={`flex flex-1 items-center justify-center gap-1.5 border-l-2 border-black py-1.5 text-xs font-bold uppercase ${
+                    role === 'artist' ? 'bg-black text-cream' : 'hover:bg-black/5'
+                  }`}
+                >
+                  <Mic2 size={12} /> Artist
+                </button>
+              </div>
+            </>
           )}
           <input
             type="email"

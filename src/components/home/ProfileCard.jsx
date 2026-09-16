@@ -1,18 +1,13 @@
 import { useState } from 'react';
-import { GitFork, Sparkles } from 'lucide-react';
-import { useForkSpace, useOwnedBadges, useProfileById, useUpdateProfile } from '../../hooks/useSpacesQueries';
-import { initialsOf } from '../../utils/format';
-import ForkDiffViewer from '../customize/ForkDiffViewer';
+import { Sparkles } from 'lucide-react';
+import { useOwnedBadges, useUpdateProfile } from '../../hooks/useSpacesQueries';
 
-const BADGE_ICONS = { Sparkles, GitFork };
+const BADGE_ICONS = { Sparkles };
 
-export default function ProfileCard({ profile, isOwner, viewerProfile }) {
+export default function ProfileCard({ profile, isOwner }) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(profile.bio_mood);
-  const [showForkPreview, setShowForkPreview] = useState(false);
   const updateProfile = useUpdateProfile(profile.id);
-  const forkSpace = useForkSpace(viewerProfile?.id);
-  const { data: parent } = useProfileById(profile.forked_from_id);
   const { data: badges = [] } = useOwnedBadges(profile.id);
 
   const save = () => {
@@ -21,30 +16,18 @@ export default function ProfileCard({ profile, isOwner, viewerProfile }) {
     if (trimmed !== profile.bio_mood) updateProfile.mutate({ bio_mood: trimmed });
   };
 
-  const canFork = !isOwner && viewerProfile && viewerProfile.id !== profile.id;
-
   return (
     <div className="space-card border-2 border-black bg-white p-3">
-      <div className="flex items-center gap-3">
-        <div
-          className="flex h-14 w-14 shrink-0 items-center justify-center border-2 border-black text-lg font-black"
-          style={{ backgroundColor: profile.color, color: profile.color === '#111111' ? '#FDFBF7' : '#111111' }}
-        >
-          {initialsOf(profile.display_name)}
+      {badges.length > 0 && (
+        <div className="mb-2 flex flex-wrap items-center gap-1.5">
+          {badges.map((b) => {
+            const Icon = BADGE_ICONS[b.icon] ?? Sparkles;
+            return <Icon key={b.id} size={14} className="text-spark" title={b.name} />;
+          })}
         </div>
-        <div className="min-w-0">
-          <div className="flex flex-wrap items-center gap-1">
-            <p className="font-black leading-none">{profile.display_name}</p>
-            {badges.map((b) => {
-              const Icon = BADGE_ICONS[b.icon] ?? Sparkles;
-              return <Icon key={b.id} size={13} className="text-spark" title={b.name} />;
-            })}
-          </div>
-          <p className="text-xs text-black/50">@{profile.handle}</p>
-        </div>
-      </div>
+      )}
 
-      <div className="mt-3">
+      <div>
         {isOwner && editing ? (
           <input
             autoFocus
@@ -70,32 +53,6 @@ export default function ProfileCard({ profile, isOwner, viewerProfile }) {
           </button>
         )}
       </div>
-
-      {parent && (
-        <div className="mt-3 inline-flex items-center gap-1 border-2 border-black bg-cream px-2 py-1 text-[10px] font-bold uppercase tracking-wide">
-          <GitFork size={11} />
-          Forked from @{parent.handle} ({parent.fork_count} forks)
-        </div>
-      )}
-
-      {canFork && (
-        <button
-          onClick={() => setShowForkPreview(true)}
-          className="mt-3 flex w-full items-center justify-center gap-1.5 border-2 border-black bg-spark px-2 py-1.5 text-[10px] font-bold uppercase transition-colors hover:bg-black hover:text-cream"
-        >
-          <GitFork size={12} /> Fork this Space ({profile.fork_count})
-        </button>
-      )}
-
-      {showForkPreview && canFork && (
-        <ForkDiffViewer
-          source={profile}
-          mine={viewerProfile}
-          busy={forkSpace.isPending}
-          onCancel={() => setShowForkPreview(false)}
-          onConfirm={() => forkSpace.mutate(profile.id, { onSuccess: () => setShowForkPreview(false) })}
-        />
-      )}
     </div>
   );
 }

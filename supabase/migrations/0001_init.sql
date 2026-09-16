@@ -1,5 +1,5 @@
 -- =============================================================================
--- SPACES — initial schema, RLS policies, and stored procedures
+-- R'SPACE — initial schema, RLS policies, and stored procedures
 -- Run against a Supabase (or vanilla Postgres 14+) database.
 -- =============================================================================
 

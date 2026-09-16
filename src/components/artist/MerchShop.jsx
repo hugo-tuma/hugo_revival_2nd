@@ -9,7 +9,7 @@ export default function MerchShop({ profile, isOwner, viewerId, viewerBalance })
   const createItem = useCreateMerchItem(profile.id);
   const purchase = usePurchaseMerch(viewerId);
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({ name: '', price: '', stock: '', variants: 'S, M, L', color: '#111111' });
+  const [form, setForm] = useState({ name: '', price: '', stock: '', variants: 'S, M, L', color: '#111111', album: '' });
   const [selected, setSelected] = useState({});
   const [justBought, setJustBought] = useState({});
 
@@ -22,10 +22,11 @@ export default function MerchShop({ profile, isOwner, viewerId, viewerBalance })
         stock: Number(form.stock),
         variants: form.variants.split(',').map((v) => v.trim()).filter(Boolean),
         imageColor: form.color,
+        album: form.album.trim(),
       },
       {
         onSuccess: () => {
-          setForm({ name: '', price: '', stock: '', variants: 'S, M, L', color: '#111111' });
+          setForm({ name: '', price: '', stock: '', variants: 'S, M, L', color: '#111111', album: '' });
           setShowForm(false);
         },
       }
@@ -92,6 +93,12 @@ export default function MerchShop({ profile, isOwner, viewerId, viewerBalance })
               placeholder="Variants, comma separated"
               value={form.variants}
               onChange={(e) => setForm((f) => ({ ...f, variants: e.target.value }))}
+              className="col-span-2 border-2 border-black px-2 py-1 text-xs"
+            />
+            <input
+              placeholder="Album (optional, for Store filtering)"
+              value={form.album}
+              onChange={(e) => setForm((f) => ({ ...f, album: e.target.value }))}
               className="col-span-2 border-2 border-black px-2 py-1 text-xs"
             />
             <label className="col-span-2 flex items-center justify-between text-xs font-bold">

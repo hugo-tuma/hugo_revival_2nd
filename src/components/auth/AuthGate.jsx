@@ -18,7 +18,7 @@ function SetupScreen() {
     <div className="flex min-h-screen items-center justify-center bg-cream p-6 font-mono">
       <div className="max-w-lg border-2 border-black bg-white p-6">
         <div className="mb-4 flex items-center gap-1.5 text-xl font-black tracking-tight">
-          SPACES
+          R'SPACE
           <span className="inline-block h-2 w-2 bg-spark" />
         </div>
         <h1 className="mb-2 text-sm font-black uppercase tracking-wide">Connect Supabase to go live</h1>

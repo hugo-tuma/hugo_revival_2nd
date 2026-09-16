@@ -1,5 +1,5 @@
 -- =============================================================================
--- SPACES — storage bucket for user-uploaded audio
+-- R'SPACE — storage bucket for user-uploaded audio
 -- =============================================================================
 
 insert into storage.buckets (id, name, public)

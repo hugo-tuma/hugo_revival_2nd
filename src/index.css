@@ -59,3 +59,11 @@ html, body {
   animation: drawer-up 0.22s ease-out forwards;
 }
 
+@keyframes drawer-left {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(0); }
+}
+.animate-drawer-left {
+  animation: drawer-left 0.2s ease-out forwards;
+}
+

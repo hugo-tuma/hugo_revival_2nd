@@ -13,7 +13,7 @@ export default class ErrorBoundary extends Component {
 
   componentDidCatch(error, info) {
     // eslint-disable-next-line no-console
-    console.error('SPACES crashed:', error, info);
+    console.error("R'SPACE crashed:", error, info);
   }
 
   render() {

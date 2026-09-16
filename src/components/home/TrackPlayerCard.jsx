@@ -1,8 +1,9 @@
 import { useEffect, useRef } from 'react';
-import { Music2, Pause, Play } from 'lucide-react';
-import { useTracks } from '../../hooks/useSpacesQueries';
+import { Heart, Music2, Pause, Play } from 'lucide-react';
+import { useIsTrackLiked, useToggleTrackLike, useTracks } from '../../hooks/useSpacesQueries';
 import { useAudioStore } from '../../stores/audioStore';
 import TrackUploadForm from '../audio/TrackUploadForm';
+import AddToPlaylistMenu from '../audio/AddToPlaylistMenu';
 import SectionHeading from '../ui/SectionHeading';
 import { CardSkeleton } from '../ui/Skeleton';
 import { formatTime } from '../../utils/format';
@@ -11,7 +12,7 @@ import { formatTime } from '../../utils/format';
 // the single persistent GlobalPlayerBar — its own waveform/scrubber render
 // there, so this stays a lightweight card and playback never gets
 // duplicated across two WaveSurfer instances.
-export default function TrackPlayerCard({ profile, isOwner }) {
+export default function TrackPlayerCard({ profile, isOwner, viewerId }) {
   const { data: tracks, isLoading } = useTracks(profile.id, { wip: false });
   const currentTrack = useAudioStore((s) => s.currentTrack);
   const isPlaying = useAudioStore((s) => s.isPlaying);
@@ -24,6 +25,9 @@ export default function TrackPlayerCard({ profile, isOwner }) {
   const queue = (tracks ?? []).map((t) => ({ ...t, handle: profile.handle, artist_name: profile.display_name }));
   const latest = queue[0];
   const isThisLoaded = latest && currentTrack?.id === latest.id;
+
+  const { data: isLiked } = useIsTrackLiked(viewerId, latest?.id);
+  const toggleLike = useToggleTrackLike(viewerId, latest?.id);
 
   useEffect(() => {
     if (hasAutoplayed.current) return;
@@ -56,6 +60,21 @@ export default function TrackPlayerCard({ profile, isOwner }) {
                 {isThisLoaded ? `${formatTime(currentTime)} / ${formatTime(duration)}` : formatTime(latest.duration)}
               </p>
             </div>
+            {viewerId && (
+              <div className="flex shrink-0 items-center gap-1.5">
+                <button
+                  onClick={() => toggleLike.mutate(Boolean(isLiked))}
+                  className={`flex h-8 w-8 items-center justify-center border-2 border-black hover:bg-black/5 ${
+                    isLiked ? 'bg-spark' : ''
+                  }`}
+                  aria-label="Like track"
+                  title="Like"
+                >
+                  <Heart size={13} fill={isLiked ? 'currentColor' : 'none'} />
+                </button>
+                <AddToPlaylistMenu userId={viewerId} trackId={latest.id} />
+              </div>
+            )}
           </div>
         )}
       </div>

@@ -1,31 +1,39 @@
-import { BadgeCheck, Heart, UserCheck, UserPlus, Users, Zap } from 'lucide-react';
+import { BadgeCheck, Heart, MessageCircle, UserCheck, UserPlus, Users, Zap } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { initialsOf } from '../../utils/format';
 import {
   useFollowerCount,
+  useGetOrCreateConversation,
   useIsFollowing,
   useIsSupporting,
   useTipArtist,
   useToggleFollow,
   useToggleSupport,
 } from '../../hooks/useSpacesQueries';
+import ProfileBadges from './ProfileBadges';
+import { bannerStyle } from '../../utils/bannerStyle';
 
 const TIP_AMOUNTS = [20, 50, 100];
 
 export default function ArtistHeader({ profile, isOwner, viewerId }) {
+  const navigate = useNavigate();
   const { data: followerCount = 0 } = useFollowerCount(profile.id);
   const { data: isFollowing } = useIsFollowing(viewerId, profile.id);
   const { data: support } = useIsSupporting(viewerId, profile.id);
   const toggleFollow = useToggleFollow(viewerId, profile.id);
   const toggleSupport = useToggleSupport(viewerId, profile.id);
   const tip = useTipArtist(viewerId);
+  const getOrCreateConversation = useGetOrCreateConversation();
 
   return (
     <div className="space-banner border-2 border-black bg-white">
-      <div className="h-24 bg-black" />
+      <div className="relative h-24" style={bannerStyle(profile.layout_config?.banner)}>
+        <ProfileBadges profile={profile} />
+      </div>
       <div className="px-4 pb-4">
-        <div className="-mt-8 flex flex-wrap items-end gap-3">
+        <div className="relative z-10 -mt-10 flex flex-wrap items-end gap-3">
           <div
-            className="flex h-20 w-20 shrink-0 items-center justify-center border-2 border-black text-2xl font-black"
+            className="flex h-20 w-20 shrink-0 items-center justify-center border-2 border-black bg-white text-2xl font-black shadow-[3px_3px_0_0_#111111]"
             style={{ backgroundColor: profile.color, color: profile.color === '#111111' ? '#FDFBF7' : '#111111' }}
           >
             {initialsOf(profile.display_name)}
@@ -76,6 +84,18 @@ export default function ArtistHeader({ profile, isOwner, viewerId }) {
               >
                 <Heart size={12} fill={support?.active ? 'currentColor' : 'none'} />
                 {support?.active ? 'Supporting monthly' : 'Support monthly'}
+              </button>
+
+              <button
+                onClick={() =>
+                  getOrCreateConversation.mutate(profile.id, {
+                    onSuccess: (conversation) => navigate(`/messages/${conversation.id}`),
+                  })
+                }
+                disabled={getOrCreateConversation.isPending}
+                className="flex items-center gap-1 border-2 border-black px-3 py-1.5 text-xs font-bold hover:bg-black/5 disabled:opacity-50"
+              >
+                <MessageCircle size={12} /> Message
               </button>
             </div>
           )}

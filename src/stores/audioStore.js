@@ -13,6 +13,7 @@ export const useAudioStore = create(
       currentTrack: null,
       queue: [],
       queueIndex: -1,
+      history: [],
       isPlaying: false,
       isReady: false,
       pendingAutoplay: false,
@@ -31,6 +32,7 @@ export const useAudioStore = create(
       // exactly one code path that ever loads audio into the instance.
       loadTrack: (track, queue, autoplay = false) => {
         const resolvedQueue = queue ?? get().queue;
+        const prevHistory = get().history.filter((t) => t.id !== track.id);
         set({
           currentTrack: track,
           queue: resolvedQueue,
@@ -38,6 +40,7 @@ export const useAudioStore = create(
           currentTime: 0,
           isReady: false,
           pendingAutoplay: autoplay,
+          history: [track, ...prevHistory].slice(0, 30),
         });
       },
 
@@ -106,6 +109,7 @@ export const useAudioStore = create(
         loop: state.loop,
         queue: state.queue,
         queueIndex: state.queueIndex,
+        history: state.history,
       }),
     }
   )

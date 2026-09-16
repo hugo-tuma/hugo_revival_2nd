@@ -1,4 +1,4 @@
-# SPACES
+# R'SPACE
 
 A brutalist MySpace × Bandcamp music social platform. React + Vite + Tailwind
 on the frontend, Supabase (Postgres + RLS + Realtime + Storage) on the
@@ -140,7 +140,7 @@ src/
     layout/                Header, ToastViewport, ErrorBoundary, ResponsiveShell
     ui/                    Toggle, Drawer, Skeleton, SectionHeading
   boards/
-    HomeBoard.jsx, ArtistBoard.jsx, CustomizeBoard.jsx
+    ProfileBoard.jsx, CustomizeBoard.jsx
   utils/
     format.js, audioDecode.js
 ```
