@@ -2,6 +2,7 @@ import { Calendar, MapPin } from 'lucide-react';
 import RSpacePanel from '../components/RSpacePanel';
 import EmptyState from '../components/EmptyState';
 import Skeleton from '../components/Skeleton';
+import AccountGateDialog from '../components/AccountGateDialog';
 import { useGigs } from '../hooks/useRSpaceQueries';
 import { formatGigDate } from '../lib/format';
 
@@ -39,13 +40,22 @@ export default function GigsView() {
                   <MapPin size={10} strokeWidth={1.5} /> {g.city} &middot; {formatCents(g.price_cents)}
                 </p>
               </div>
-              <span
-                className={`shrink-0 border px-2 py-1 font-mono text-[9px] font-bold uppercase ${
-                  g.status === 'on_sale' ? 'border-black bg-black text-white' : 'border-neutral-300 text-neutral-400'
-                }`}
-              >
-                {g.status === 'on_sale' ? 'On Sale' : 'Sold Out'}
-              </span>
+              {g.status === 'on_sale' ? (
+                <AccountGateDialog
+                  trigger={
+                    <button className="shrink-0 border border-black bg-black px-2 py-1 font-mono text-[9px] font-bold uppercase text-white hover:bg-neutral-800">
+                      Get tickets
+                    </button>
+                  }
+                  title="Coming soon"
+                >
+                  This feature will be added soon.
+                </AccountGateDialog>
+              ) : (
+                <span className="shrink-0 border border-neutral-300 px-2 py-1 font-mono text-[9px] font-bold uppercase text-neutral-400">
+                  Sold Out
+                </span>
+              )}
             </div>
           ))}
         </div>

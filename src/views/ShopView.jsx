@@ -45,12 +45,9 @@ export default function ShopView() {
                         {item.stock <= 0 ? 'Sold out' : 'Buy'}
                       </button>
                     }
-                    title="Buy"
+                    title="Coming soon"
                   >
-                    This is a public, sign-in-free preview of R&rsquo;SPACE, so there&rsquo;s no account to charge
-                    Sparks from yet. Buying merch is wired up on the backend (the <code>purchase_merch</code> RPC
-                    debits the buyer and credits the artist atomically) &mdash; it just needs a real signed-in
-                    account to run as.
+                    This feature will be added soon.
                   </AccountGateDialog>
                 </div>
                 <p className="mt-1 font-mono text-[10px] text-neutral-400">

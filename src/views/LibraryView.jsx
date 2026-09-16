@@ -1,4 +1,5 @@
-import { Heart, Library as LibraryIcon, ListMusic, Pause, Play } from 'lucide-react';
+import { useState } from 'react';
+import { Heart, Library as LibraryIcon, ListMusic, Pause, Play, X } from 'lucide-react';
 import RSpacePanel from '../components/RSpacePanel';
 import EmptyState from '../components/EmptyState';
 import Skeleton from '../components/Skeleton';
@@ -7,8 +8,10 @@ import { formatDuration } from '../lib/format';
 
 export default function LibraryView({ nowPlaying, isPlaying, onPlayTrack, onTogglePlay }) {
   const { data: playlists, isLoading: playlistsLoading, isError: playlistsError } = usePublicPlaylists();
-  const { data: likedTracks, isLoading: tracksLoading, isError: tracksError, error: tracksErr } = useTopLikedTracks(10);
+  const { data: allLikedTracks, isLoading: tracksLoading, isError: tracksError, error: tracksErr } = useTopLikedTracks(10);
+  const [removedIds, setRemovedIds] = useState(() => new Set());
 
+  const likedTracks = allLikedTracks?.filter((t) => !removedIds.has(t.id));
   const totalLikes = likedTracks?.reduce((sum, t) => sum + t.like_count, 0) ?? 0;
 
   return (
@@ -65,31 +68,40 @@ export default function LibraryView({ nowPlaying, isPlaying, onPlayTrack, onTogg
             {likedTracks.map((t, i) => {
               const isActive = nowPlaying?.id === t.id;
               return (
-                <button
-                  key={t.id}
-                  onClick={() => (isActive ? onTogglePlay() : onPlayTrack(t))}
-                  className="flex w-full items-center gap-3 py-2.5 text-left first:pt-0 last:pb-0 hover:bg-neutral-50"
-                >
-                  <span className="flex w-4 shrink-0 items-center justify-center">
-                    {isActive && isPlaying ? (
-                      <Pause size={11} strokeWidth={1.5} />
-                    ) : isActive ? (
-                      <Play size={11} strokeWidth={1.5} />
-                    ) : (
-                      <span className="font-mono text-xs text-neutral-400">{i + 1}</span>
-                    )}
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <p className={`truncate font-sans text-sm ${isActive ? 'font-semibold' : 'font-medium'}`}>
-                      {t.title}
-                    </p>
-                    <p className="truncate font-sans text-xs text-neutral-400">{t.artist?.display_name}</p>
-                  </div>
-                  <span className="shrink-0 font-mono text-xs text-neutral-400">{formatDuration(t.duration)}</span>
-                  <span className="flex shrink-0 items-center gap-1 font-mono text-xs text-neutral-400">
-                    <Heart size={11} strokeWidth={1.5} /> {t.like_count}
-                  </span>
-                </button>
+                <div key={t.id} className="group flex w-full items-center first:pt-0 last:pb-0 hover:bg-neutral-50">
+                  <button
+                    onClick={() => (isActive ? onTogglePlay() : onPlayTrack(t))}
+                    className="flex min-w-0 flex-1 items-center gap-3 py-2.5 text-left"
+                  >
+                    <span className="flex w-4 shrink-0 items-center justify-center">
+                      {isActive && isPlaying ? (
+                        <Pause size={11} strokeWidth={1.5} />
+                      ) : isActive ? (
+                        <Play size={11} strokeWidth={1.5} />
+                      ) : (
+                        <span className="font-mono text-xs text-neutral-400">{i + 1}</span>
+                      )}
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className={`truncate font-sans text-sm ${isActive ? 'font-semibold' : 'font-medium'}`}>
+                        {t.title}
+                      </p>
+                      <p className="truncate font-sans text-xs text-neutral-400">{t.artist?.display_name}</p>
+                    </div>
+                    <span className="shrink-0 font-mono text-xs text-neutral-400">{formatDuration(t.duration)}</span>
+                    <span className="flex shrink-0 items-center gap-1 font-mono text-xs text-neutral-400">
+                      <Heart size={11} strokeWidth={1.5} /> {t.like_count}
+                    </span>
+                  </button>
+                  <button
+                    onClick={() => setRemovedIds((prev) => new Set(prev).add(t.id))}
+                    className="ml-1 flex h-6 w-6 shrink-0 items-center justify-center text-neutral-300 hover:text-black"
+                    aria-label={`Remove ${t.title} from library`}
+                    title="Remove from library"
+                  >
+                    <X size={13} strokeWidth={1.5} />
+                  </button>
+                </div>
               );
             })}
           </div>

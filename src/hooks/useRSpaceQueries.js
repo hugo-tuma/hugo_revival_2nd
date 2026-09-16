@@ -113,6 +113,23 @@ export function useTopLikedTracks(limit = 8) {
   return { ...rest, data: topLiked };
 }
 
+export function useGroupPosts(groupId) {
+  return useQuery({
+    queryKey: ['groupPosts', groupId],
+    enabled: Boolean(groupId),
+    queryFn: async () => {
+      assertSupabase();
+      const { data, error } = await supabase
+        .from('group_posts')
+        .select('*, author:profiles!group_posts_author_id_fkey(handle, display_name, color)')
+        .eq('group_id', groupId)
+        .order('created_at', { ascending: true });
+      if (error) throw error;
+      return data;
+    },
+  });
+}
+
 /* ------------------------------------------------------------------ */
 /* Shop                                                                 */
 /* ------------------------------------------------------------------ */

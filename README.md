@@ -75,12 +75,32 @@ result set from both views.
 
 ## What's read-only in this pass
 
-Two actions from the original wireframe — "+ New group" and adding a
-playlist — need a real signed-in identity to attach the new row to (RLS
-requires `auth.uid() = owner_id` / `= user_id` on insert), and this pass has
-no auth. Both UI affordances are still there; clicking them explains that
-plainly instead of faking a local-only success that would vanish on reload.
-Adding real sign-in is a natural next step if you want those to work.
+Anything that would need a real signed-in identity to attach a row to (RLS
+requires `auth.uid() = owner_id` / `= user_id` / group membership on insert)
+is still a real UI affordance, but clicking it opens a small "this feature
+will be added soon" dialog instead of faking a local-only success that would
+vanish on reload: "+ New group", buying merch, getting gig tickets, sending
+a group chat message, sending a direct message, and the account/sign-in
+menu. Adding real sign-in is a natural next step if you want all of those to
+actually write to the database.
+
+Two things are real without needing auth, implemented as honest,
+per-browser workarounds rather than gated:
+- **Joining a group** is tracked in `localStorage` (see
+  `src/hooks/useJoinedGroups.js`) instead of `group_members`, since that
+  insert also needs `auth.uid()`. It's real enough to persist across
+  reloads and drive a "Joined groups" section, just not synced to the
+  backend or visible to anyone else.
+- **Removing a song from your library** hides it from the current
+  session's view (component state in `LibraryView.jsx`); it doesn't delete
+  the underlying `track_likes` row, since that row isn't yours to delete
+  without a real session either.
+
+Artist bios are generated client-side from each profile's real fields
+(`src/lib/generateBio.js`) — there's no free-text `bio` column in the
+schema, only the short `bio_mood` tagline, so this composes a fuller
+paragraph around it deterministically (same artist always reads the same
+way) rather than adding a migration for one column.
 
 ## Design system
 
