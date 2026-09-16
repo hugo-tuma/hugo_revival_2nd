@@ -4,12 +4,10 @@ export default {
   theme: {
     extend: {
       colors: {
-        cream: '#FDFBF7',
-        ink: '#111111',
-        spark: '#FF4F00',
+        canvas: '#F4F4F5',
       },
       fontFamily: {
-        sans: ['Archivo', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
         mono: ['"IBM Plex Mono"', 'ui-monospace', 'SFMono-Regular', 'monospace'],
       },
     },
