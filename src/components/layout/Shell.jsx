@@ -11,10 +11,15 @@ export default function Shell({
   onSearchChange,
   sparksBalance,
   player,
+  audioElementProps,
+  onPlayTrack,
   children,
 }) {
   return (
     <div className="flex h-screen flex-col bg-canvas font-sans text-black">
+      {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
+      <audio {...audioElementProps} />
+
       <TopBar
         sidebarCollapsed={sidebarCollapsed}
         onToggleSidebar={onToggleSidebar}
@@ -22,6 +27,7 @@ export default function Shell({
         onSearchChange={onSearchChange}
         sparksBalance={sparksBalance}
         onSelectView={onSelectView}
+        onPlayTrack={onPlayTrack}
       />
 
       <div className="flex min-h-0 flex-1">
@@ -30,8 +36,12 @@ export default function Shell({
       </div>
 
       <BottomTransportBar
+        nowPlaying={player.nowPlaying}
         isPlaying={player.isPlaying}
         onTogglePlay={player.onTogglePlay}
+        currentTime={player.currentTime}
+        duration={player.duration}
+        onSeek={player.onSeek}
         repeat={player.repeat}
         onToggleRepeat={player.onToggleRepeat}
         volume={player.volume}

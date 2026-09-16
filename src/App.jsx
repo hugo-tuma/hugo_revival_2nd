@@ -3,6 +3,7 @@ import Shell from './components/layout/Shell';
 import ErrorBoundary from './components/layout/ErrorBoundary';
 import SetupScreen from './components/layout/SetupScreen';
 import { isSupabaseConfigured } from './lib/supabase';
+import usePlayerEngine from './hooks/usePlayerEngine';
 import PayoutsView from './views/PayoutsView';
 import LibraryView from './views/LibraryView';
 import ArtistsView from './views/ArtistsView';
@@ -28,9 +29,7 @@ function AppShell() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [search, setSearch] = useState('');
 
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [repeat, setRepeat] = useState(false);
-  const [volume, setVolume] = useState(70);
+  const player = usePlayerEngine();
 
   const sparksBalance = 0;
 
@@ -46,15 +45,29 @@ function AppShell() {
       onSearchChange={setSearch}
       sparksBalance={sparksBalance}
       player={{
-        isPlaying,
-        onTogglePlay: () => setIsPlaying((v) => !v),
-        repeat,
-        onToggleRepeat: () => setRepeat((v) => !v),
-        volume,
-        onVolumeChange: setVolume,
+        nowPlaying: player.nowPlaying,
+        isPlaying: player.isPlaying,
+        onTogglePlay: player.togglePlay,
+        currentTime: player.currentTime,
+        duration: player.duration,
+        onSeek: player.seek,
+        repeat: player.repeat,
+        onToggleRepeat: () => player.setRepeat((v) => !v),
+        volume: player.volume,
+        onVolumeChange: player.setVolume,
       }}
+      audioElementProps={player.audioElementProps}
+      onPlayTrack={player.playTrack}
     >
-      <ActiveView sparksBalance={sparksBalance} />
+      <ActiveView
+        sparksBalance={sparksBalance}
+        nowPlaying={player.nowPlaying}
+        isPlaying={player.isPlaying}
+        currentTime={player.currentTime}
+        duration={player.duration}
+        onPlayTrack={player.playTrack}
+        onTogglePlay={player.togglePlay}
+      />
     </Shell>
   );
 }

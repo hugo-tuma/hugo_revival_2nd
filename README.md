@@ -124,12 +124,19 @@ src/
 
 ## Known limits
 
-- **No real audio.** Seed track `audio_url` values are structured
-  placeholders (`cdn.rspace.fm/seed-audio/...`) — no files are actually
-  hosted, so playback controls are decorative. The bottom transport bar
-  intentionally stays "Nothing playing" (matches the original wireframe
-  spec); the Music Player's "Now Playing" panel shows real track metadata
-  from the catalog.
+- **One shared audio file stands in for every track.** Seed track
+  `audio_url` values are still structured placeholders
+  (`cdn.rspace.fm/seed-audio/...`) with nothing real hosted at them, so
+  playback doesn't stream each track's own audio. What *does* work: every
+  "play" affordance (Library's liked songs, the Music Player's featured
+  track/queue/recently played, and track results in the search dropdown)
+  triggers real HTML5 audio playback of one bundled instrumental loop
+  (`public/audio/demo-track.wav`, synthesized locally — see
+  `src/hooks/usePlayerEngine.js`), and the bottom transport bar reflects
+  real state: the actual track's title/artist, real play/pause, a real
+  seekable progress bar, and real elapsed/total time (the loop's own
+  duration, not the track's fictional metadata duration, since that's
+  what's actually playing).
 - **Queue / Recently Played are derived, not tracked.** There's no
   per-visitor playback-history table in this schema, so those two panels
   are populated from the real track catalog (most-liked / most-recent

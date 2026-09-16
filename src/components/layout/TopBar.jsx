@@ -16,6 +16,7 @@ export default function TopBar({
   onSearchChange,
   sparksBalance = 0,
   onSelectView,
+  onPlayTrack,
 }) {
   const [searchFocused, setSearchFocused] = useState(false);
   const { data: tracks } = useTrackCatalog();
@@ -98,7 +99,10 @@ export default function TopBar({
                 {matchedTracks.map((t) => (
                   <button
                     key={t.id}
-                    onClick={() => goTo('player')}
+                    onClick={() => {
+                      onPlayTrack?.(t);
+                      goTo('player');
+                    }}
                     className="flex items-center gap-2 px-3 py-2 text-left hover:bg-neutral-100"
                   >
                     <Music size={14} strokeWidth={1.5} className="shrink-0 text-neutral-500" />

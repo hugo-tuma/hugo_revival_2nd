@@ -1,11 +1,11 @@
-import { Heart, Library as LibraryIcon, ListMusic } from 'lucide-react';
+import { Heart, Library as LibraryIcon, ListMusic, Pause, Play } from 'lucide-react';
 import RSpacePanel from '../components/RSpacePanel';
 import EmptyState from '../components/EmptyState';
 import Skeleton from '../components/Skeleton';
 import { usePublicPlaylists, useTopLikedTracks } from '../hooks/useRSpaceQueries';
 import { formatDuration } from '../lib/format';
 
-export default function LibraryView() {
+export default function LibraryView({ nowPlaying, isPlaying, onPlayTrack, onTogglePlay }) {
   const { data: playlists, isLoading: playlistsLoading, isError: playlistsError } = usePublicPlaylists();
   const { data: likedTracks, isLoading: tracksLoading, isError: tracksError, error: tracksErr } = useTopLikedTracks(10);
 
@@ -62,19 +62,36 @@ export default function LibraryView() {
           <EmptyState>No liked songs yet.</EmptyState>
         ) : (
           <div className="flex flex-col divide-y divide-neutral-200">
-            {likedTracks.map((t, i) => (
-              <div key={t.id} className="flex items-center gap-3 py-2.5 first:pt-0 last:pb-0">
-                <span className="w-4 shrink-0 text-right font-mono text-xs text-neutral-400">{i + 1}</span>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate font-sans text-sm font-medium">{t.title}</p>
-                  <p className="truncate font-sans text-xs text-neutral-400">{t.artist?.display_name}</p>
-                </div>
-                <span className="shrink-0 font-mono text-xs text-neutral-400">{formatDuration(t.duration)}</span>
-                <span className="flex shrink-0 items-center gap-1 font-mono text-xs text-neutral-400">
-                  <Heart size={11} strokeWidth={1.5} /> {t.like_count}
-                </span>
-              </div>
-            ))}
+            {likedTracks.map((t, i) => {
+              const isActive = nowPlaying?.id === t.id;
+              return (
+                <button
+                  key={t.id}
+                  onClick={() => (isActive ? onTogglePlay() : onPlayTrack(t))}
+                  className="flex w-full items-center gap-3 py-2.5 text-left first:pt-0 last:pb-0 hover:bg-neutral-50"
+                >
+                  <span className="flex w-4 shrink-0 items-center justify-center">
+                    {isActive && isPlaying ? (
+                      <Pause size={11} strokeWidth={1.5} />
+                    ) : isActive ? (
+                      <Play size={11} strokeWidth={1.5} />
+                    ) : (
+                      <span className="font-mono text-xs text-neutral-400">{i + 1}</span>
+                    )}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className={`truncate font-sans text-sm ${isActive ? 'font-semibold' : 'font-medium'}`}>
+                      {t.title}
+                    </p>
+                    <p className="truncate font-sans text-xs text-neutral-400">{t.artist?.display_name}</p>
+                  </div>
+                  <span className="shrink-0 font-mono text-xs text-neutral-400">{formatDuration(t.duration)}</span>
+                  <span className="flex shrink-0 items-center gap-1 font-mono text-xs text-neutral-400">
+                    <Heart size={11} strokeWidth={1.5} /> {t.like_count}
+                  </span>
+                </button>
+              );
+            })}
           </div>
         )}
       </RSpacePanel>
