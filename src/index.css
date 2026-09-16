@@ -21,3 +21,41 @@ html, body {
 .animate-blink-dot {
   animation: blink-dot 1.6s ease-in-out infinite;
 }
+
+@keyframes scanline-sweep {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(100%); }
+}
+.scanline-sweep {
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(17, 17, 17, 0.06) 0px,
+    rgba(17, 17, 17, 0.06) 1px,
+    transparent 1px,
+    transparent 3px
+  );
+  animation: scanline-sweep 1.6s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes toast-in {
+  0% { opacity: 0; transform: translateY(8px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+.animate-toast-in {
+  animation: toast-in 0.18s ease-out forwards;
+}
+
+.user-space-scope {
+  background-color: var(--bg, #FDFBF7);
+  color: var(--text, #111111);
+}
+
+@keyframes drawer-up {
+  0% { transform: translateY(100%); }
+  100% { transform: translateY(0); }
+}
+.animate-drawer-up {
+  animation: drawer-up 0.22s ease-out forwards;
+}
+
