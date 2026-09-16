@@ -9,13 +9,20 @@
 -- and notifications.
 --
 -- Idempotent: every id is DERIVED deterministically from a stable text key
--- (see pg_temp.seed_uuid below — same handle/slug always yields the same
+-- (see public._seed_uuid below — same handle/slug always yields the same
 -- UUID), every insert uses ON CONFLICT DO NOTHING/DO UPDATE, and setseed()
 -- pins the "random" jitter. Re-running this script updates existing rows in
 -- place and adds nothing extra for any seed key it already wrote.
 --
 -- ASSUMES: supabase/migrations/0001 through 0005 have already been applied
 -- to this database.
+--
+-- Scratch objects (public._seed_uuid, public._seed_persona/_group/_support/
+-- _conversation) are plain, non-temporary schema objects, not session-local
+-- TEMP tables/pg_temp functions — the Supabase SQL Editor does not guarantee
+-- that a whole pasted script runs on one continuous session, which breaks
+-- reliance on TEMPORARY TABLE/pg_temp across statements. They're truncated
+-- on creation (safe to re-run) and dropped at the end of this script.
 --
 -- Paste this whole file into the Supabase SQL Editor and run it once.
 -- =============================================================================
@@ -24,7 +31,7 @@ begin;
 
 select setseed(0.4173);
 
-create or replace function pg_temp.seed_uuid(seed text) returns uuid
+create or replace function public._seed_uuid(seed text) returns uuid
 language sql immutable as $$
   select (
     substr(md5('rspace-seed:' || seed), 1, 8) || '-' ||
@@ -54,11 +61,12 @@ $$;
 -- log in. created_at is spread across the last ~10 months so the community
 -- reads as one that grew over time, not one that all signed up on day one.
 
-create temporary table tmp_persona (
+create table if not exists public._seed_persona (
   handle text, display_name text, role text, color text, bio_mood text, avatar_seed text, joined_days_ago int
-) on commit drop;
+);
+truncate table public._seed_persona;
 
-insert into tmp_persona (handle, display_name, role, color, bio_mood, avatar_seed, joined_days_ago) values
+insert into _seed_persona (handle, display_name, role, color, bio_mood, avatar_seed, joined_days_ago) values
   -- founding-era artists / labels / collectives
   ('mira_voltage',     'Mira Voltage',          'artist',   '#111111', 'modular patches recorded straight to tape, no overdubs',        'mira-voltage',     312),
   ('kreis_null',       'Kreis Null',            'artist',   '#FF4F00', 'Berlin basement techno, 909s and detuned Junos',                'kreis-null',       298),
@@ -118,7 +126,7 @@ insert into auth.users (
   confirmation_token, recovery_token, email_change, email_change_token_new
 )
 select
-  pg_temp.seed_uuid(handle),
+  public._seed_uuid(handle),
   '00000000-0000-0000-0000-000000000000',
   'authenticated',
   'authenticated',
@@ -130,12 +138,12 @@ select
   now() - (joined_days_ago || ' days')::interval,
   now(),
   '', '', '', ''
-from tmp_persona
+from _seed_persona
 on conflict (id) do nothing;
 
 insert into public.profiles (id, handle, display_name, avatar_url, color, bio_mood, role, sparks_balance, created_at)
 select
-  pg_temp.seed_uuid(p.handle),
+  public._seed_uuid(p.handle),
   p.handle,
   p.display_name,
   'https://api.dicebear.com/7.x/identicon/svg?seed=' || p.avatar_seed || '&backgroundColor=f4f4f5&backgroundType=solid',
@@ -144,7 +152,7 @@ select
   p.role,
   (300 + floor(random() * 2200))::bigint,
   now() - (p.joined_days_ago || ' days')::interval
-from tmp_persona p
+from _seed_persona p
 on conflict (id) do update set
   handle       = excluded.handle,
   display_name = excluded.display_name,
@@ -202,8 +210,8 @@ with track_seed(artist_handle, slug, title, duration, is_wip) as (
 )
 insert into public.tracks (id, user_id, title, duration, audio_url, is_wip, created_at)
 select
-  pg_temp.seed_uuid('track:' || slug),
-  pg_temp.seed_uuid(artist_handle),
+  public._seed_uuid('track:' || slug),
+  public._seed_uuid(artist_handle),
   title,
   duration::double precision,
   'https://cdn.rspace.fm/seed-audio/' || slug || '.mp3',
@@ -234,9 +242,9 @@ with note_seed(track_slug, author_handle, timestamp_sec, content, days_ago) as (
 )
 insert into public.track_notes (id, track_id, user_id, parent_id, timestamp_sec, content, created_at)
 select
-  pg_temp.seed_uuid('note:' || track_slug || ':' || author_handle || ':' || timestamp_sec),
-  pg_temp.seed_uuid('track:' || track_slug),
-  pg_temp.seed_uuid(author_handle),
+  public._seed_uuid('note:' || track_slug || ':' || author_handle || ':' || timestamp_sec),
+  public._seed_uuid('track:' || track_slug),
+  public._seed_uuid(author_handle),
   null,
   timestamp_sec,
   content,
@@ -251,10 +259,10 @@ with reply_seed(track_slug, author_handle, parent_track_slug, parent_author_hand
 )
 insert into public.track_notes (id, track_id, user_id, parent_id, timestamp_sec, content, created_at)
 select
-  pg_temp.seed_uuid('note:' || track_slug || ':' || author_handle || ':' || timestamp_sec),
-  pg_temp.seed_uuid('track:' || track_slug),
-  pg_temp.seed_uuid(author_handle),
-  pg_temp.seed_uuid('note:' || parent_track_slug || ':' || parent_author_handle || ':' || parent_timestamp_sec),
+  public._seed_uuid('note:' || track_slug || ':' || author_handle || ':' || timestamp_sec),
+  public._seed_uuid('track:' || track_slug),
+  public._seed_uuid(author_handle),
+  public._seed_uuid('note:' || parent_track_slug || ':' || parent_author_handle || ':' || parent_timestamp_sec),
   timestamp_sec,
   content,
   now() - (days_ago || ' days')::interval
@@ -268,7 +276,7 @@ on conflict (id) do nothing;
 insert into public.track_likes (user_id, track_id, created_at)
 select liker.id, t.id, now() - (random() * interval '75 days')
 from (
-  select pg_temp.seed_uuid(handle) as id
+  select public._seed_uuid(handle) as id
   from (values
     ('juno_static'), ('reel_to_real'), ('low_end_theorem'), ('patina_press'),
     ('static_and_din'), ('gain_stage'), ('corey_marsh'), ('jbarreto'),
@@ -303,8 +311,8 @@ with playlist_seed(owner_handle, slug, name) as (
 ins_playlists as (
   insert into public.playlists (id, user_id, name, created_at)
   select
-    pg_temp.seed_uuid('playlist:' || slug),
-    pg_temp.seed_uuid(owner_handle),
+    public._seed_uuid('playlist:' || slug),
+    public._seed_uuid(owner_handle),
     name,
     now() - (random() * interval '90 days')
   from playlist_seed
@@ -313,7 +321,7 @@ ins_playlists as (
 )
 insert into public.playlist_tracks (playlist_id, track_id, position, added_at)
 select
-  pg_temp.seed_uuid('playlist:' || ps.slug),
+  public._seed_uuid('playlist:' || ps.slug),
   t.id,
   row_number() over (partition by ps.slug order by random()),
   now() - (random() * interval '85 days')
@@ -353,8 +361,8 @@ with top8_seed(owner_handle, friend_handle, position) as (
 )
 insert into public.top_friends (user_id, friend_id, position, created_at)
 select
-  pg_temp.seed_uuid(owner_handle),
-  pg_temp.seed_uuid(friend_handle),
+  public._seed_uuid(owner_handle),
+  public._seed_uuid(friend_handle),
   position,
   now() - (random() * interval '60 days')
 from top8_seed
@@ -382,8 +390,8 @@ with gig_seed(artist_handle, gig_date_offset, venue, city, price_cents, status, 
 )
 insert into public.gigs (id, artist_id, gig_date, venue, city, price_cents, status, direct_split_pct, created_at)
 select
-  pg_temp.seed_uuid('gig:' || artist_handle || ':' || gig_date_offset),
-  pg_temp.seed_uuid(artist_handle),
+  public._seed_uuid('gig:' || artist_handle || ':' || gig_date_offset),
+  public._seed_uuid(artist_handle),
   (current_date + (gig_date_offset || ' days')::interval)::date,
   venue,
   city,
@@ -406,11 +414,12 @@ on conflict (id) do nothing;
 -- that happens to re-select the owner can raise a spurious duplicate-key
 -- error under the same CTE/trigger snapshot quirk described above.
 
-create temporary table tmp_group (
+create table if not exists public._seed_group (
   slug text, owner_handle text, name text, description text
-) on commit drop;
+);
+truncate table public._seed_group;
 
-insert into tmp_group (slug, owner_handle, name, description) values
+insert into _seed_group (slug, owner_handle, name, description) values
   ('field-recording',     'fieldnotes_ln',    'Field Recording & Found Sound',
    'Contact mics, hydrophones, tape hiss as texture. Share rigs, swap unedited source, argue about noise floors.'),
   ('cassette-culture',    'cassette_orbit',   'Cassette Culture',
@@ -428,23 +437,23 @@ insert into tmp_group (slug, owner_handle, name, description) values
 
 insert into public.groups (id, name, description, owner_id, created_at)
 select
-  pg_temp.seed_uuid('group:' || slug),
+  public._seed_uuid('group:' || slug),
   name,
   description,
-  pg_temp.seed_uuid(owner_handle),
+  public._seed_uuid(owner_handle),
   now() - (random() * interval '150 days')
-from tmp_group
+from _seed_group
 on conflict (id) do nothing;
 
 with member_pool as (
-  select pg_temp.seed_uuid(handle) as id from tmp_persona
+  select public._seed_uuid(handle) as id from _seed_persona
 )
 insert into public.group_members (group_id, user_id, joined_at)
 select
-  pg_temp.seed_uuid('group:' || gs.slug),
+  public._seed_uuid('group:' || gs.slug),
   mp.id,
   now() - (random() * interval '120 days')
-from tmp_group gs
+from _seed_group gs
 cross join lateral (
   select id from member_pool order by random() limit (8 + floor(random() * 10)::int)
 ) mp
@@ -468,9 +477,9 @@ with group_post_seed(group_slug, author_handle, content, days_ago) as (
 )
 insert into public.group_posts (id, group_id, author_id, content, created_at)
 select
-  pg_temp.seed_uuid('grouppost:' || group_slug || ':' || author_handle || ':' || days_ago),
-  pg_temp.seed_uuid('group:' || group_slug),
-  pg_temp.seed_uuid(author_handle),
+  public._seed_uuid('grouppost:' || group_slug || ':' || author_handle || ':' || days_ago),
+  public._seed_uuid('group:' || group_slug),
+  public._seed_uuid(author_handle),
   content,
   now() - (days_ago || ' days')::interval
 from group_post_seed
@@ -495,8 +504,8 @@ with merch_seed(artist_handle, slug, name, price_sparks, variants, stock, image_
 )
 insert into public.merch_items (id, artist_id, name, price_sparks, variants, stock, image_color, created_at)
 select
-  pg_temp.seed_uuid('merch:' || slug),
-  pg_temp.seed_uuid(artist_handle),
+  public._seed_uuid('merch:' || slug),
+  public._seed_uuid(artist_handle),
   name,
   price_sparks,
   variants,
@@ -513,10 +522,10 @@ on conflict (id) do nothing;
 insert into public.follows (follower_id, followee_id, created_at)
 select follower.id, artist.id, now() - (random() * interval '250 days')
 from (
-  select pg_temp.seed_uuid(handle) as id from tmp_persona where role = 'listener'
+  select public._seed_uuid(handle) as id from _seed_persona where role = 'listener'
 ) follower
 cross join lateral (
-  select pg_temp.seed_uuid(handle) as id from tmp_persona where role = 'artist'
+  select public._seed_uuid(handle) as id from _seed_persona where role = 'artist'
   order by random()
   limit (2 + floor(random() * 5)::int)
 ) artist
@@ -551,9 +560,9 @@ with comment_seed(target_handle, author_handle, text, days_ago) as (
 )
 insert into public.wall_comments (id, target_user_id, author_id, text, created_at)
 select
-  pg_temp.seed_uuid('comment:' || target_handle || ':' || author_handle || ':' || days_ago),
-  pg_temp.seed_uuid(target_handle),
-  pg_temp.seed_uuid(author_handle),
+  public._seed_uuid('comment:' || target_handle || ':' || author_handle || ':' || days_ago),
+  public._seed_uuid(target_handle),
+  public._seed_uuid(author_handle),
   text,
   now() - (days_ago || ' days')::interval
 from comment_seed
@@ -563,11 +572,12 @@ on conflict (id) do nothing;
 -- 12. MONTHLY SUPPORT — active (and a couple paused) supporter relationships
 -- =============================================================================
 
-create temporary table tmp_support (
+create table if not exists public._seed_support (
   supporter_handle text, artist_handle text, monthly_amount int, active boolean, last_charged_days_ago int
-) on commit drop;
+);
+truncate table public._seed_support;
 
-insert into tmp_support (supporter_handle, artist_handle, monthly_amount, active, last_charged_days_ago) values
+insert into _seed_support (supporter_handle, artist_handle, monthly_amount, active, last_charged_days_ago) values
   ('simone_arceo',    'cassette_orbit',   100, true,  6),
   ('simone_arceo',    'kreis_null',        50, true,  6),
   ('static_and_din',  'kreis_null',        50, true, 14),
@@ -585,14 +595,14 @@ insert into tmp_support (supporter_handle, artist_handle, monthly_amount, active
 
 insert into public.supports (id, supporter_id, artist_id, monthly_amount, active, last_charged_at, created_at)
 select
-  pg_temp.seed_uuid('support:' || supporter_handle || ':' || artist_handle),
-  pg_temp.seed_uuid(supporter_handle),
-  pg_temp.seed_uuid(artist_handle),
+  public._seed_uuid('support:' || supporter_handle || ':' || artist_handle),
+  public._seed_uuid(supporter_handle),
+  public._seed_uuid(artist_handle),
   monthly_amount,
   active,
   now() - (last_charged_days_ago || ' days')::interval,
   now() - ((last_charged_days_ago + 30) || ' days')::interval
-from tmp_support
+from _seed_support
 on conflict (supporter_id, artist_id) do nothing;
 
 -- =============================================================================
@@ -605,10 +615,10 @@ on conflict (supporter_id, artist_id) do nothing;
 --   'merch'   -> Merch sales
 
 with artist_pool as (
-  select pg_temp.seed_uuid(handle) as id from tmp_persona where role = 'artist'
+  select public._seed_uuid(handle) as id from _seed_persona where role = 'artist'
 ),
 supporter_pool as (
-  select pg_temp.seed_uuid(handle) as id from tmp_persona
+  select public._seed_uuid(handle) as id from _seed_persona
 ),
 tips as (
   select
@@ -624,22 +634,22 @@ support_charges as (
   -- 1-2 historical charges per active/paused support relationship, matching
   -- its own monthly_amount, so the ledger and the supports table agree.
   select
-    pg_temp.seed_uuid(ts.supporter_handle) as from_id,
-    pg_temp.seed_uuid(ts.artist_handle) as to_id,
+    public._seed_uuid(ts.supporter_handle) as from_id,
+    public._seed_uuid(ts.artist_handle) as to_id,
     ts.monthly_amount as amount,
     'support'::text as category,
     '{}'::jsonb as metadata,
     now() - (random() * interval '55 days' + interval '5 days') as created_at
-  from tmp_support ts
+  from _seed_support ts
   union all
   select
-    pg_temp.seed_uuid(ts.supporter_handle),
-    pg_temp.seed_uuid(ts.artist_handle),
+    public._seed_uuid(ts.supporter_handle),
+    public._seed_uuid(ts.artist_handle),
     ts.monthly_amount,
     'support'::text,
     '{}'::jsonb,
     now() - (random() * interval '25 days')
-  from tmp_support ts
+  from _seed_support ts
   where ts.active
 ),
 merch_sales as (
@@ -664,7 +674,7 @@ numbered as (
 )
 insert into public.sparks_ledger (id, from_id, to_id, amount, category, metadata, created_at)
 select
-  pg_temp.seed_uuid('ledger:v2:' || n),
+  public._seed_uuid('ledger:v2:' || n),
   from_id, to_id, amount, category, metadata, created_at
 from numbered
 on conflict (id) do nothing;
@@ -698,7 +708,7 @@ update public.profiles p
 set sparks_balance = greatest(0, 500 + net.delta)
 from net
 where net.id = p.id
-  and p.id in (select pg_temp.seed_uuid(handle) from tmp_persona);
+  and p.id in (select public._seed_uuid(handle) from _seed_persona);
 
 -- =============================================================================
 -- 14. MERCH ORDERS — one order per merch-category ledger row
@@ -706,7 +716,7 @@ where net.id = p.id
 
 insert into public.merch_orders (id, merch_id, buyer_id, variant, price_sparks, created_at)
 select
-  pg_temp.seed_uuid('order:' || sl.id),
+  public._seed_uuid('order:' || sl.id),
   (sl.metadata ->> 'merch_id')::uuid,
   sl.from_id,
   sl.metadata ->> 'variant',
@@ -739,7 +749,7 @@ with badge_seed(profile_handle, badge_name, days_ago) as (
 )
 insert into public.profile_badges (profile_id, badge_id, acquired_at)
 select
-  pg_temp.seed_uuid(bs.profile_handle),
+  public._seed_uuid(bs.profile_handle),
   b.id,
   now() - (bs.days_ago || ' days')::interval
 from badge_seed bs
@@ -780,8 +790,8 @@ with post_seed(actor_handle, text, days_ago) as (
 )
 insert into public.feed_events (id, actor_id, type, metadata, created_at)
 select
-  pg_temp.seed_uuid('feedpost:' || actor_handle || ':' || days_ago),
-  pg_temp.seed_uuid(actor_handle),
+  public._seed_uuid('feedpost:' || actor_handle || ':' || days_ago),
+  public._seed_uuid(actor_handle),
   'post',
   jsonb_build_object('text', text),
   now() - (days_ago || ' days')::interval
@@ -796,10 +806,10 @@ with fork_seed(forker_handle, source_handle, days_ago) as (
 )
 insert into public.feed_events (id, actor_id, type, metadata, created_at)
 select
-  pg_temp.seed_uuid('feedfork:' || forker_handle),
-  pg_temp.seed_uuid(forker_handle),
+  public._seed_uuid('feedfork:' || forker_handle),
+  public._seed_uuid(forker_handle),
   'fork',
-  jsonb_build_object('forked_from_id', pg_temp.seed_uuid(source_handle)),
+  jsonb_build_object('forked_from_id', public._seed_uuid(source_handle)),
   now() - (days_ago || ' days')::interval
 from fork_seed
 on conflict (id) do nothing;
@@ -811,15 +821,15 @@ with fork_seed(forker_handle, source_handle, days_ago) as (
     ('yusuf_demir',     'kreis_null',     15)
 )
 update public.profiles p
-set forked_from_id = pg_temp.seed_uuid(fs.source_handle)
+set forked_from_id = public._seed_uuid(fs.source_handle)
 from fork_seed fs
-where p.id = pg_temp.seed_uuid(fs.forker_handle)
-  and p.forked_from_id is distinct from pg_temp.seed_uuid(fs.source_handle);
+where p.id = public._seed_uuid(fs.forker_handle)
+  and p.forked_from_id is distinct from public._seed_uuid(fs.source_handle);
 
 update public.profiles p
 set fork_count = sub.n
 from (
-  select pg_temp.seed_uuid(source_handle) as id, count(*) as n
+  select public._seed_uuid(source_handle) as id, count(*) as n
   from (values ('cassette_orbit'), ('mira_voltage'), ('kreis_null')) as s(source_handle)
   group by source_handle
 ) sub
@@ -839,8 +849,8 @@ with badge_feed_seed(profile_handle, badge_name, days_ago) as (
 )
 insert into public.feed_events (id, actor_id, type, metadata, created_at)
 select
-  pg_temp.seed_uuid('feedbadge:' || bfs.profile_handle || ':' || bfs.badge_name),
-  pg_temp.seed_uuid(bfs.profile_handle),
+  public._seed_uuid('feedbadge:' || bfs.profile_handle || ':' || bfs.badge_name),
+  public._seed_uuid(bfs.profile_handle),
   'badge_mint',
   jsonb_build_object('name', bfs.badge_name),
   now() - (bfs.days_ago || ' days')::interval
@@ -851,11 +861,12 @@ on conflict (id) do nothing;
 -- 17. DIRECT MESSAGES — a handful of conversations with a short back-and-forth
 -- =============================================================================
 
-create temporary table tmp_conversation (
+create table if not exists public._seed_conversation (
   slug text, user_a_handle text, user_b_handle text
-) on commit drop;
+);
+truncate table public._seed_conversation;
 
-insert into tmp_conversation (slug, user_a_handle, user_b_handle) values
+insert into _seed_conversation (slug, user_a_handle, user_b_handle) values
   ('juno-mira',    'juno_static',    'mira_voltage'),
   ('static-kreis',  'static_and_din', 'kreis_null'),
   ('reel-cassette', 'reel_to_real',   'cassette_orbit'),
@@ -867,11 +878,11 @@ insert into tmp_conversation (slug, user_a_handle, user_b_handle) values
 
 insert into public.conversations (id, user_a_id, user_b_id, created_at)
 select
-  pg_temp.seed_uuid('conversation:' || slug),
-  pg_temp.seed_uuid(user_a_handle),
-  pg_temp.seed_uuid(user_b_handle),
+  public._seed_uuid('conversation:' || slug),
+  public._seed_uuid(user_a_handle),
+  public._seed_uuid(user_b_handle),
   now() - interval '20 days'
-from tmp_conversation
+from _seed_conversation
 on conflict (id) do nothing;
 
 with message_seed(slug, sender_handle, content, minutes_after_start) as (
@@ -902,9 +913,9 @@ with message_seed(slug, sender_handle, content, minutes_after_start) as (
 )
 insert into public.messages (id, conversation_id, sender_id, content, created_at)
 select
-  pg_temp.seed_uuid('message:' || ms.slug || ':' || ms.minutes_after_start || ':' || ms.sender_handle),
-  pg_temp.seed_uuid('conversation:' || ms.slug),
-  pg_temp.seed_uuid(ms.sender_handle),
+  public._seed_uuid('message:' || ms.slug || ':' || ms.minutes_after_start || ':' || ms.sender_handle),
+  public._seed_uuid('conversation:' || ms.slug),
+  public._seed_uuid(ms.sender_handle),
   ms.content,
   now() - interval '20 days' + (ms.minutes_after_start || ' minutes')::interval
 from message_seed ms
@@ -918,7 +929,7 @@ on conflict (id) do nothing;
 
 insert into public.notifications (id, recipient_id, actor_id, type, metadata, read, created_at)
 select
-  pg_temp.seed_uuid('notif:tip:' || sl.id),
+  public._seed_uuid('notif:tip:' || sl.id),
   sl.to_id,
   sl.from_id,
   'tip',
@@ -931,7 +942,7 @@ on conflict (id) do nothing;
 
 insert into public.notifications (id, recipient_id, actor_id, type, metadata, read, created_at)
 select
-  pg_temp.seed_uuid('notif:merch:' || sl.id),
+  public._seed_uuid('notif:merch:' || sl.id),
   sl.to_id,
   sl.from_id,
   'merch_purchase',
@@ -941,6 +952,14 @@ select
 from public.sparks_ledger sl
 where sl.category = 'merch'
 on conflict (id) do nothing;
+
+-- Scratch objects are only needed within this script; drop them so nothing
+-- lingers in the schema afterward.
+drop table if exists public._seed_persona;
+drop table if exists public._seed_group;
+drop table if exists public._seed_support;
+drop table if exists public._seed_conversation;
+drop function if exists public._seed_uuid(text);
 
 commit;
 
