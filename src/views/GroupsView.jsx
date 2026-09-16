@@ -1,21 +1,14 @@
 import { useState } from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
-import { Layers, Plus, X } from 'lucide-react';
+import { Layers, Plus, Users, X } from 'lucide-react';
 import RSpacePanel from '../components/RSpacePanel';
 import EmptyState from '../components/EmptyState';
+import Skeleton from '../components/Skeleton';
+import { useGroups } from '../hooks/useRSpaceQueries';
 
 export default function GroupsView() {
-  const [groups, setGroups] = useState([]);
+  const { data: groups, isLoading, isError, error } = useGroups();
   const [open, setOpen] = useState(false);
-  const [name, setName] = useState('');
-
-  const createGroup = () => {
-    const trimmed = name.trim();
-    if (!trimmed) return;
-    setGroups((g) => [...g, { id: `${Date.now()}`, name: trimmed }]);
-    setName('');
-    setOpen(false);
-  };
 
   return (
     <RSpacePanel
@@ -39,36 +32,39 @@ export default function GroupsView() {
                   </button>
                 </Dialog.Close>
               </div>
-              <Dialog.Description className="sr-only">Create a new group by naming it.</Dialog.Description>
-              <div className="flex flex-col gap-3 p-4">
-                <input
-                  autoFocus
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && createGroup()}
-                  placeholder="Group name"
-                  className="border border-black px-2.5 py-1.5 text-sm outline-none"
-                />
-                <button
-                  onClick={createGroup}
-                  className="border border-black bg-black py-1.5 text-xs font-semibold uppercase text-white hover:bg-neutral-800"
-                >
-                  Create
-                </button>
-              </div>
+              <Dialog.Description className="p-4 font-sans text-xs text-neutral-600">
+                This is a public, sign-in-free preview of R&rsquo;SPACE, so there&rsquo;s no account to own a new
+                group with yet. Creating a group is wired up on the backend (Row Level Security ties every group
+                to its creator) &mdash; it just needs a real signed-in account to attach it to.
+              </Dialog.Description>
             </Dialog.Content>
           </Dialog.Portal>
         </Dialog.Root>
       }
     >
-      {groups.length === 0 ? (
+      {isLoading ? (
+        <div className="flex flex-col gap-2">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Skeleton key={i} className="h-16 w-full" />
+          ))}
+        </div>
+      ) : isError ? (
+        <EmptyState>Couldn&rsquo;t load groups: {error.message}</EmptyState>
+      ) : groups.length === 0 ? (
         <EmptyState>No groups yet &mdash; start one.</EmptyState>
       ) : (
         <div className="flex flex-col divide-y divide-neutral-200">
           {groups.map((g) => (
-            <div key={g.id} className="flex items-center gap-3 py-3 first:pt-0 last:pb-0">
-              <Layers size={16} strokeWidth={1.5} />
-              <span className="font-sans text-sm">{g.name}</span>
+            <div key={g.id} className="flex items-start gap-3 py-3 first:pt-0 last:pb-0">
+              <Layers size={16} strokeWidth={1.5} className="mt-0.5 shrink-0" />
+              <div className="min-w-0 flex-1">
+                <p className="font-sans text-sm font-medium">{g.name}</p>
+                <p className="mt-0.5 text-xs text-neutral-500">{g.description}</p>
+                <p className="mt-1 flex items-center gap-1 text-[11px] text-neutral-400">
+                  <Users size={11} strokeWidth={1.5} /> {g.member_count} member{g.member_count === 1 ? '' : 's'}
+                  {g.owner && <> &middot; started by {g.owner.display_name}</>}
+                </p>
+              </div>
             </div>
           ))}
         </div>

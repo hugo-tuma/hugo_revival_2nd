@@ -1,59 +1,82 @@
-import { useState } from 'react';
-import { Heart, Library as LibraryIcon, ListMusic, Plus } from 'lucide-react';
+import { Heart, Library as LibraryIcon, ListMusic } from 'lucide-react';
 import RSpacePanel from '../components/RSpacePanel';
 import EmptyState from '../components/EmptyState';
+import Skeleton from '../components/Skeleton';
+import { usePublicPlaylists, useTopLikedTracks } from '../hooks/useRSpaceQueries';
+import { formatDuration } from '../lib/format';
 
 export default function LibraryView() {
-  const [playlistName, setPlaylistName] = useState('');
-  const [playlists, setPlaylists] = useState([]);
+  const { data: playlists, isLoading: playlistsLoading, isError: playlistsError } = usePublicPlaylists();
+  const { data: likedTracks, isLoading: tracksLoading, isError: tracksError, error: tracksErr } = useTopLikedTracks(10);
 
-  const addPlaylist = () => {
-    const name = playlistName.trim();
-    if (!name) return;
-    setPlaylists((p) => [...p, { id: `${Date.now()}`, name }]);
-    setPlaylistName('');
-  };
+  const totalLikes = likedTracks?.reduce((sum, t) => sum + t.like_count, 0) ?? 0;
 
   return (
     <div className="grid grid-cols-1 gap-4 lg:grid-cols-[300px_1fr]">
-      <RSpacePanel title="Your Library" icon={LibraryIcon} bodyClassName="p-0">
-        <button className="flex w-full items-center gap-3 bg-gradient-to-r from-red-500 to-red-600 px-4 py-3 text-left text-white">
+      <RSpacePanel title="Community Library" icon={LibraryIcon} bodyClassName="p-0">
+        <div className="flex w-full items-center gap-3 bg-gradient-to-r from-red-500 to-red-600 px-4 py-3 text-white">
           <Heart size={18} strokeWidth={1.75} fill="white" />
           <span className="flex-1 font-sans text-sm font-semibold">Liked Songs</span>
-          <span className="font-mono text-xs">0</span>
-        </button>
+          <span className="font-mono text-xs">{totalLikes}</span>
+        </div>
 
-        {playlists.length > 0 && (
+        {playlistsLoading ? (
+          <div className="flex flex-col gap-2 p-3">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <Skeleton key={i} className="h-10 w-full" />
+            ))}
+          </div>
+        ) : playlistsError ? (
+          <p className="p-3 font-sans text-xs text-neutral-400">Couldn&rsquo;t load playlists.</p>
+        ) : (
           <div className="flex flex-col divide-y divide-neutral-200">
             {playlists.map((p) => (
               <div key={p.id} className="flex items-center gap-3 px-4 py-3">
                 <ListMusic size={16} strokeWidth={1.5} className="shrink-0 text-black" />
-                <span className="flex-1 truncate font-sans text-sm">{p.name}</span>
-                <span className="font-mono text-xs text-neutral-400">0</span>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate font-sans text-sm">{p.name}</p>
+                  <p className="truncate font-sans text-[11px] text-neutral-400">by {p.owner?.display_name}</p>
+                </div>
+                <span className="shrink-0 font-mono text-xs text-neutral-400">{p.track_count}</span>
               </div>
             ))}
           </div>
         )}
 
-        <div className="flex gap-2 border-t border-neutral-200 p-3">
-          <input
-            value={playlistName}
-            onChange={(e) => setPlaylistName(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && addPlaylist()}
-            placeholder="new playlist name"
-            className="min-w-0 flex-1 border border-black px-2 py-1.5 text-sm outline-none"
-          />
-          <button
-            onClick={addPlaylist}
-            className="flex shrink-0 items-center gap-1 border border-black px-2.5 py-1.5 text-xs font-semibold uppercase hover:bg-black hover:text-white"
-          >
-            <Plus size={13} strokeWidth={1.75} /> Add
-          </button>
-        </div>
+        <p className="border-t border-neutral-200 p-3 font-sans text-[11px] text-neutral-400">
+          This is a public, sign-in-free preview &mdash; creating your own playlist needs a real account (Row
+          Level Security ties every playlist to its owner).
+        </p>
       </RSpacePanel>
 
-      <RSpacePanel title="Liked Songs" icon={Heart}>
-        <EmptyState>No liked songs yet.</EmptyState>
+      <RSpacePanel title="Most Liked Songs" icon={Heart}>
+        {tracksLoading ? (
+          <div className="flex flex-col gap-2">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <Skeleton key={i} className="h-10 w-full" />
+            ))}
+          </div>
+        ) : tracksError ? (
+          <EmptyState>Couldn&rsquo;t load tracks: {tracksErr.message}</EmptyState>
+        ) : likedTracks.length === 0 ? (
+          <EmptyState>No liked songs yet.</EmptyState>
+        ) : (
+          <div className="flex flex-col divide-y divide-neutral-200">
+            {likedTracks.map((t, i) => (
+              <div key={t.id} className="flex items-center gap-3 py-2.5 first:pt-0 last:pb-0">
+                <span className="w-4 shrink-0 text-right font-mono text-xs text-neutral-400">{i + 1}</span>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate font-sans text-sm font-medium">{t.title}</p>
+                  <p className="truncate font-sans text-xs text-neutral-400">{t.artist?.display_name}</p>
+                </div>
+                <span className="shrink-0 font-mono text-xs text-neutral-400">{formatDuration(t.duration)}</span>
+                <span className="flex shrink-0 items-center gap-1 font-mono text-xs text-neutral-400">
+                  <Heart size={11} strokeWidth={1.5} /> {t.like_count}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
       </RSpacePanel>
     </div>
   );

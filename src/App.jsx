@@ -1,5 +1,8 @@
 import { useState } from 'react';
 import Shell from './components/layout/Shell';
+import ErrorBoundary from './components/layout/ErrorBoundary';
+import SetupScreen from './components/layout/SetupScreen';
+import { isSupabaseConfigured } from './lib/supabase';
 import PayoutsView from './views/PayoutsView';
 import LibraryView from './views/LibraryView';
 import ArtistsView from './views/ArtistsView';
@@ -18,7 +21,7 @@ const VIEWS = {
   payouts: PayoutsView,
 };
 
-export default function App() {
+function AppShell() {
   const [activeView, setActiveView] = useState('library');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [search, setSearch] = useState('');
@@ -51,5 +54,14 @@ export default function App() {
     >
       <ActiveView sparksBalance={sparksBalance} />
     </Shell>
+  );
+}
+
+export default function App() {
+  if (!isSupabaseConfigured) return <SetupScreen />;
+  return (
+    <ErrorBoundary>
+      <AppShell />
+    </ErrorBoundary>
   );
 }
