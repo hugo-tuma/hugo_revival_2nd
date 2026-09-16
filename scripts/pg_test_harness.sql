@@ -3,9 +3,27 @@
 -- assumes exist, so it can be exercised against a vanilla local Postgres.
 create schema if not exists auth;
 create table if not exists auth.users (
-  id uuid primary key default gen_random_uuid(),
-  email text,
-  raw_user_meta_data jsonb not null default '{}'::jsonb
+  id                        uuid primary key default gen_random_uuid(),
+  instance_id               uuid,
+  aud                       varchar(255),
+  role                      varchar(255),
+  email                     varchar(255),
+  encrypted_password        varchar(255),
+  email_confirmed_at        timestamptz,
+  invited_at                timestamptz,
+  confirmation_token        varchar(255),
+  confirmation_sent_at      timestamptz,
+  recovery_token            varchar(255),
+  recovery_sent_at          timestamptz,
+  email_change_token_new    varchar(255),
+  email_change              varchar(255),
+  email_change_sent_at      timestamptz,
+  last_sign_in_at           timestamptz,
+  raw_app_meta_data         jsonb not null default '{}'::jsonb,
+  raw_user_meta_data        jsonb not null default '{}'::jsonb,
+  is_super_admin            boolean,
+  created_at                timestamptz,
+  updated_at                timestamptz
 );
 
 create or replace function auth.uid() returns uuid
