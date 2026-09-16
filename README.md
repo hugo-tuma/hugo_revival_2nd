@@ -51,9 +51,10 @@ enough for Artists, Gigs, Groups, Library, and Music Player.
 
 `sparks_ledger` is different on purpose: its RLS policy restricts reads to
 the two participants in each transaction (see `0001_init.sql`), because it
-records who tipped whom. A logged-out visitor querying it directly gets
-zero rows — verified: `select count(*) from sparks_ledger` as the
-`authenticated` role with no `auth.uid()` returns `0`.
+records who tipped whom. A logged-out visitor's requests run as the `anon`
+role (that's what the Supabase anon key maps to for a client with no signed-in
+session), so a logged-out visitor querying it directly gets zero rows —
+verified: `select count(*) from sparks_ledger` as `anon` returns `0`.
 
 Payouts and the Sparks activity feed still need *some* real numbers, so
 `0006_public_showcase_views.sql` adds two views instead of loosening that
@@ -68,9 +69,9 @@ Views run with the privileges of their owner (the migration role) rather
 than the querying role, which is what lets `anon` read an aggregate over a
 table its own RLS policy blocks it from querying directly — a standard,
 documented Postgres/Supabase pattern for exposing safe aggregates without
-touching the underlying table's security. Verified locally: the same
-`authenticated`-with-no-session role that gets 0 rows from `sparks_ledger`
-gets the full, correctly-aggregated result set from both views.
+touching the underlying table's security. Verified locally: the same `anon`
+role that gets 0 rows from `sparks_ledger` gets the full, correctly-aggregated
+result set from both views.
 
 ## What's read-only in this pass
 
