@@ -1,5 +1,7 @@
 # Dependencies
 node_modules/
+.npm/
+.pnpm-store/
 
 # Build output
 dist/
@@ -10,12 +12,16 @@ build/
 
 # Vite
 .vite/
+.vite-temp/
+.cache/
+*.tsbuildinfo
 *.local
 
 # Environment (keep committed templates)
 .env
 .env.*
 !.env.example
+!.env.*.example
 
 # Logs
 logs/
@@ -28,6 +34,9 @@ pnpm-debug.log*
 # Test / coverage
 coverage/
 *.lcov
+.nyc_output/
+playwright-report/
+test-results/
 
 # Editor
 .vscode/*
@@ -38,7 +47,9 @@ coverage/
 
 # OS
 .DS_Store
+._*
 Thumbs.db
+Desktop.ini
 
 # Supabase local
 supabase/.temp/
@@ -47,3 +58,9 @@ supabase/.branches/
 # Optional secrets / certs
 *.pem
 *.p12
+*.pfx
+*.key
+
+# Local deployment metadata
+.vercel/
+.netlify/
